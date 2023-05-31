@@ -3,6 +3,7 @@ import csv
 import os
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 
 folders=["attackOnTitan_fotos", "deathNote_fotos", "Evangelion", "KimetsuNoYaiba", "LOTR","NBA", "onePiece_fotos", "SNKRS", "StarWars"]
 names =["AOT (","deathNote (","Evangel (","KNY (","LOTR (", "nba (","OnePiece (", "Snkrs (", "SW ("]
@@ -33,21 +34,37 @@ def extract_features(img, name, folder):
     satB = cv2.mean(hsvB[:,:,2])[0]
     histB = cv2.calcHist([img], [0], None, [256], [0, 256])
 
-    return [name,folder, mean, std_dev, min_val, max_val, n_edges, satR, satG, satB, histR, histG, histB]
+    histRList  = []
+    histGList  = []
+    histBList  = []
+
+    for i in histR:
+        histRList.append(float(i))
+    for i in histG:
+        histGList.append(float(i))
+    for i in histB:
+        histBList.append(float(i))
 
 
-with open('features.csv', 'w', newline='') as csvfile:
+
+    # return [name,folder, mean, std_dev, min_val, max_val, n_edges, satR, satG, satB]
+    return [name, folder, histRList]
+
+
+with open('featuresHistR.csv', 'w', newline='') as csvfile:
     writer = csv.writer(csvfile)
 
-    writer.writerow(['Archivo','Name','Folder', 'Media', 'Desviacion estandar', 'Valor minimo', 'Valor maximo', 'Numero de bordes', 'Saturación de rojo',
-                     'Saturacion de verde', 'Saturacion de azul'])
+    # writer.writerow(['Name','Folder', 'Media', 'Desviacion estandar', 'Valor minimo', 'Valor maximo', 'Numero de bordes', 'Saturación de rojo',
+    #                  'Saturacion de verde', 'Saturacion de azul'])
+
+    writer.writerow(['Name', 'Folder', 'RedHistogram'])
 
     for j in range(9):
         for i in range(1, 101):
             name = names[j]+str(i)+').png'
             img = cv2.imread('./fotosGabriel/'+folders[j]+'/'+name)
             features = extract_features(img, name, folders[j])
-            writer.writerow([os.path.basename(str(i))]+ features)
+            writer.writerow(features)
 
 print("Ready")
 
