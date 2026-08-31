@@ -1,4 +1,10 @@
 {
+  "name": "frame-lab",
+  "private": true,
+  "scripts": {
+    "start": "node server/app.js",
+    "test": "python3 server/test_classify.py"
+  },
   "dependencies": {
     "python-shell": "^5.0.0"
   }
