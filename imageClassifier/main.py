@@ -1,96 +1,97 @@
-import cv2
+"""Extract histogram features from the labeled stills in fotosGabriel."""
+
 import csv
-import os
-import numpy as np
+from pathlib import Path
+
+import cv2
 import matplotlib.pyplot as plt
-import pandas as pd
 
-folders=["attackOnTitan_fotos", "deathNote_fotos", "Evangelion", "KimetsuNoYaiba", "LOTR","NBA", "onePiece_fotos", "SNKRS", "StarWars"]
-names =["AOT (","deathNote (","Evangel (","KNY (","LOTR (", "nba (","OnePiece (", "Snkrs (", "SW ("]
+ROOT = Path(__file__).resolve().parent
+PHOTOS = ROOT / "fotosGabriel"
+
+FOLDERS = [
+    "attackOnTitan_fotos",
+    "deathNote_fotos",
+    "Evangelion",
+    "KimetsuNoYaiba",
+    "LOTR",
+    "NBA",
+    "onePiece_fotos",
+    "SNKRS",
+    "StarWars",
+]
+NAMES = [
+    "AoT (",
+    "deathNote (",
+    "Evangel (",
+    "KNY (",
+    "LOTR (",
+    "nba (",
+    "OnePiece (",
+    "Snkrs (",
+    "SW (",
+]
 
 
-# Función para calcular las características de una imagen
 def extract_features(img, name, folder):
+    if img is None:
+        raise ValueError(f"Could not read image for {folder}/{name}")
+
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     mean = cv2.mean(gray)[0]
     std_dev = cv2.meanStdDev(gray)[1][0][0]
-    min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(gray)
-    edges = cv2.Canny(gray, 50, 150)
-    n_edges = cv2.countNonZero(edges)
+    min_val, max_val, _, _ = cv2.minMaxLoc(gray)
+    n_edges = cv2.countNonZero(cv2.Canny(gray, 50, 150))
 
-    #saturation of the red channel
-    hsvR = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-    satR = cv2.mean(hsvR[:,:,0])[0]
-    histR = cv2.calcHist([img], [2], None, [256], [0, 256])
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    hue, sat, val = (float(v) for v in cv2.mean(hsv)[:3])
+    hist_r = [float(v) for v in cv2.calcHist([img], [2], None, [256], [0, 256])]
+    hist_g = [float(v) for v in cv2.calcHist([img], [1], None, [256], [0, 256])]
+    hist_b = [float(v) for v in cv2.calcHist([img], [0], None, [256], [0, 256])]
 
-
-    #saturation of the green channel
-    hsvG = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-    satG = cv2.mean(hsvG[:,:,1])[0]
-    histG = cv2.calcHist([img], [1], None, [256], [0, 256])
-
-    #saturation of the blue channel
-    hsvB = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-    satB = cv2.mean(hsvB[:,:,2])[0]
-    histB = cv2.calcHist([img], [0], None, [256], [0, 256])
-
-    histRList  = []
-    histGList  = []
-    histBList  = []
-
-    for i in histR:
-        histRList.append(float(i))
-    for i in histG:
-        histGList.append(float(i))
-    for i in histB:
-        histBList.append(float(i))
+    return [name, folder, mean, std_dev, min_val, max_val, n_edges, hue, sat, val, hist_r, hist_g, hist_b]
 
 
+def write_red_histogram_csv(destination=ROOT / "featuresHistR.csv"):
+    with open(destination, "w", newline="", encoding="utf-8") as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(["Name", "Folder", "RedHistogram"])
+        for folder, prefix in zip(FOLDERS, NAMES):
+            for index in range(1, 101):
+                name = f"{prefix}{index}).png"
+                path = PHOTOS / folder / name
+                img = cv2.imread(str(path))
+                features = extract_features(img, name, folder)
+                writer.writerow([features[0], features[1], *features[-3]])
+    print(f"Wrote {destination}")
 
-    # return [name,folder, mean, std_dev, min_val, max_val, n_edges, satR, satG, satB]
-    return [name, folder, histRList]
+
+def explore():
+    print("Folders:")
+    for index, folder in enumerate(FOLDERS, start=1):
+        print(f"{index}) {folder}")
+
+    folder_index = int(input("Select a folder number: "))
+    image_id = input("Choose an image from 1 to 100: ")
+    name = f"{NAMES[folder_index - 1]}{image_id}).png"
+    path = PHOTOS / FOLDERS[folder_index - 1] / name
+    img = cv2.imread(str(path))
+    features = extract_features(img, name, FOLDERS[folder_index - 1])
+    print("Values", features[:10])
+
+    colors = ("r", "g", "b")
+    for histogram, color in zip(features[-3:], colors):
+        plt.figure()
+        plt.plot(histogram, color=color)
+        plt.xlim([0, 256])
+        plt.title(f"{name} — {color.upper()} histogram")
+        plt.show()
 
 
-with open('featuresHistR.csv', 'w', newline='') as csvfile:
-    writer = csv.writer(csvfile)
+if __name__ == "__main__":
+    import sys
 
-    # writer.writerow(['Name','Folder', 'Media', 'Desviacion estandar', 'Valor minimo', 'Valor maximo', 'Numero de bordes', 'Saturación de rojo',
-    #                  'Saturacion de verde', 'Saturacion de azul'])
-
-    writer.writerow(['Name', 'Folder', 'RedHistogram'])
-
-    for j in range(9):
-        for i in range(1, 101):
-            name = names[j]+str(i)+').png'
-            img = cv2.imread('./fotosGabriel/'+folders[j]+'/'+name)
-            features = extract_features(img, name, folders[j])
-            writer.writerow(features)
-
-print("Ready")
-
-while True:
-    print("1) attackOnTitan_fotos")
-    print("2) deathNote_fotos")
-    print("3) Evangelion")
-    print("4) KimetsuNoYaiba")
-    print("5) LOTR")
-    print("6) onePiece_fotos")
-    print("Seleccione el numero de carpeta")
-    carpeta= int(input()) 
-    print("Escooja una imagen del 1 al 100")
-    id = input()
-    nameOpc = names[carpeta-1]+id+').png'
-    imgOpc = cv2.imread('./fotosGabriel/'+folders[carpeta-1]+'/'+name)
-    print("Valores ", extract_features(img, nameOpc, folders[carpeta-1]))
-    # trazar el histograma del canal rojo
-    plt.plot(features[-3], color='r')
-    plt.xlim([0, 256])
-    plt.show()
-    # trazar el histograma del canal verde
-    plt.plot(features[-2], color='g')
-    plt.xlim([0, 256])
-    plt.show()
-    # trazar el histograma del canal azul
-    plt.plot(features[-1], color='b')
-    plt.xlim([0, 256])
-    plt.show()
+    if len(sys.argv) > 1 and sys.argv[1] == "extract":
+        write_red_histogram_csv()
+    else:
+        explore()
