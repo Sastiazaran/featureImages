@@ -71,9 +71,11 @@ def extract_features(img: np.ndarray) -> np.ndarray:
 
 def predict(features: np.ndarray, theta: np.ndarray) -> dict:
     logits = features @ theta.T
-    scale = float(np.std(logits)) or 1.0
-    shifted = (logits - np.max(logits)) / scale
-    exp = np.exp(shifted)
+    ordered = np.sort(logits)
+    gap = float(ordered[-1] - ordered[-2]) if logits.size > 1 else 1.0
+    temperature = max(gap / 3.0, 1.0)
+    shifted = (logits - np.max(logits)) / temperature
+    exp = np.exp(np.clip(shifted, -50, 50))
     probs = exp / np.sum(exp)
 
     idx = int(np.argmax(logits))

@@ -157,7 +157,7 @@ function highlightClass(classId) {
 
 function updateCount() {
   previewCount.textContent =
-    processedCount === 1 ? "1 frame in the bath" : `${processedCount} frames in the bath`;
+    processedCount === 1 ? "1 frame developed" : `${processedCount} frames developed`;
 }
 
 function setPreviewMessage(message) {

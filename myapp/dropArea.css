@@ -358,10 +358,16 @@ h1 {
 
 .score-list li {
   display: grid;
-  grid-template-columns: 120px 1fr 42px;
+  grid-template-columns: minmax(92px, 1.3fr) 1fr 42px;
   gap: 8px;
   align-items: center;
   font-size: 0.72rem;
+}
+
+.score-list li span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .bar {
@@ -405,6 +411,11 @@ footer {
   .drop-area,
   .frame-card img {
     width: 100%;
+  }
+
+  .drop-area {
+    min-height: 280px;
+    padding: 28px 20px;
   }
 
   .frame-card img {
